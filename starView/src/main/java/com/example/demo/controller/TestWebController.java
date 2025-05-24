@@ -14,9 +14,4 @@ public class TestWebController{
 	public String hello() {
 		return "hello";
 	}
-	
-	@GetMapping("/subin")
-	public String subin() {
-		return "subinTest";
-	}
 }
