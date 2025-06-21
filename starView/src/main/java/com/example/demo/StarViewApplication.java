@@ -1,3 +1,4 @@
+// src/main/java/com/example/demo/StarViewApplication.java
 package com.example.demo;
 
 
@@ -9,8 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @MapperScan("com.example.demo.mapper")
 public class StarViewApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(StarViewApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(StarViewApplication.class, args);
+    }
 }
