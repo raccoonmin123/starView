@@ -1,3 +1,4 @@
+// src/main/java/com/example/demo/board/dao/BoardDAOImpl.java
 package com.example.demo.board.dao;
 
 import com.example.demo.board.dto.Board;
@@ -11,63 +12,82 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Repository // 스프링 빈으로 등록
-public class BoardDAOImpl implements BoardDAO {
+@Repository
+public class BoardDAOImpl {
 
- @Autowired
- private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
- // Board 객체와 ResultSet을 매핑하는 RowMapper
- private RowMapper<Board> boardRowMapper = new RowMapper<Board>() {
-     @Override
-     public Board mapRow(ResultSet rs, int rowNum) throws SQLException {
-         Board board = new Board();
-         board.setPostId(rs.getInt("post_id"));
-         board.setUserId(rs.getString("userid"));
-         board.setUserName(rs.getString("name")); // member 테이블의 name 컬럼을 가져와 매핑
-         board.setTitle(rs.getString("title"));
-         board.setContent(rs.getString("content"));
-         board.setRegDate(rs.getObject("reg_date", LocalDateTime.class));
-         board.setModDate(rs.getObject("mod_date", LocalDateTime.class));
-         board.setViewCount(rs.getInt("view_count"));
-         return board;
-     }
- };
+    // 게시글 삽입 (파일 정보 포함)
+    public void insertBoard(Board board) {
+        String sql = "INSERT INTO board (title, content, user_id, user_name, reg_date, view_count, file_name, file_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        jdbcTemplate.update(sql,
+                board.getTitle(),
+                board.getContent(),
+                board.getUserId(),
+                board.getUserName(),
+                board.getRegDate(),
+                board.getViewCount(),
+                board.getFileName(),
+                board.getFilePath()
+        );
+    }
 
- @Override
- public List<Board> selectAllBoards() {
-     // member 테이블과 조인하여 작성자 이름을 함께 가져옵니다.
-     String sql = "SELECT b.*, m.name FROM board b JOIN member m ON b.userid = m.userid ORDER BY b.post_id DESC";
-     return jdbcTemplate.query(sql, boardRowMapper);
- }
+    // 모든 게시글 조회 (파일 정보 포함)
+    public List<Board> selectAllBoards() {
+        String sql = "SELECT post_id, title, content, user_id, user_name, reg_date, view_count, file_name, file_path FROM board ORDER BY post_id DESC";
+        return jdbcTemplate.query(sql, new BoardRowMapper());
+    }
 
- @Override
- public Board selectBoardById(int postId) {
-     String sql = "SELECT b.*, m.name FROM board b JOIN member m ON b.userid = m.userid WHERE b.post_id = ?";
-     return jdbcTemplate.queryForObject(sql, boardRowMapper, postId);
- }
+    // 게시글 ID로 조회 (파일 정보 포함)
+    public Board selectBoardById(int postId) {
+        String sql = "SELECT post_id, title, content, user_id, user_name, reg_date, view_count, file_name, file_path FROM board WHERE post_id = ?";
+        try {
+            return jdbcTemplate.queryForObject(sql, new BoardRowMapper(), postId);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
 
- @Override
- public int insertBoard(Board board) {
-     String sql = "INSERT INTO board (userid, title, content) VALUES (?, ?, ?)";
-     return jdbcTemplate.update(sql, board.getUserId(), board.getTitle(), board.getContent());
- }
+    // 게시글 업데이트 (파일 정보 포함)
+    public void updateBoard(Board board) {
+        String sql = "UPDATE board SET title = ?, content = ?, file_name = ?, file_path = ? WHERE post_id = ?";
+        jdbcTemplate.update(sql,
+                board.getTitle(),
+                board.getContent(),
+                board.getFileName(),
+                board.getFilePath(),
+                board.getPostId()
+        );
+    }
 
- @Override
- public int updateBoard(Board board) {
-     String sql = "UPDATE board SET title = ?, content = ? WHERE post_id = ?";
-     return jdbcTemplate.update(sql, board.getTitle(), board.getContent(), board.getPostId());
- }
+    // 조회수 증가
+    public void incrementViewCount(int postId) {
+        String sql = "UPDATE board SET view_count = view_count + 1 WHERE post_id = ?";
+        jdbcTemplate.update(sql, postId);
+    }
 
- @Override
- public int deleteBoard(int postId) {
-     String sql = "DELETE FROM board WHERE post_id = ?";
-     return jdbcTemplate.update(sql, postId);
- }
+    // 게시글 삭제
+    public void deleteBoard(int postId) {
+        String sql = "DELETE FROM board WHERE post_id = ?";
+        jdbcTemplate.update(sql, postId);
+    }
 
- @Override
- public void increaseViewCount(int postId) {
-     String sql = "UPDATE board SET view_count = view_count + 1 WHERE post_id = ?";
-     jdbcTemplate.update(sql, postId);
- }
+    // Board DTO에 매핑하는 RowMapper
+    private static class BoardRowMapper implements RowMapper<Board> {
+        @Override
+        public Board mapRow(ResultSet rs, int rowNum) throws SQLException {
+            Board board = new Board();
+            board.setPostId(rs.getInt("post_id"));
+            board.setTitle(rs.getString("title"));
+            board.setContent(rs.getString("content"));
+            board.setUserId(rs.getString("user_id"));
+            board.setUserName(rs.getString("user_name"));
+            board.setRegDate(rs.getTimestamp("reg_date").toLocalDateTime());
+            board.setViewCount(rs.getInt("view_count"));
+            board.setFileName(rs.getString("file_name"));
+            board.setFilePath(rs.getString("file_path"));
+            return board;
+        }
+    }
 }
