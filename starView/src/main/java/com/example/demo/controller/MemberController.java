@@ -22,10 +22,10 @@ public class MemberController {
 
     @GetMapping("/")
     public String rootRedirect() {
-        return "redirect:/member/login";
+        return "redirect:/member/login.do";
     }
 
-    @GetMapping("login")
+    @GetMapping("login.do")
     public String login() {
         return "member/login";
     }
